@@ -1,27 +1,32 @@
-# Retail Sales Intelligence Dashboard
+# 🚀 Executive Sales Dashboard
 
-A production-grade analytics dashboard designed to transform retail transaction data into actionable business insights. This application combines machine learning for customer segmentation and forecasting with deep-dive analytics for product performance.
+A full-scale analytics platform designed to transform retail transaction data into strategic business intelligence. This dashboard provides a 360-degree view of sales performance, customer behavior, and global reach.
 
-## 🚀 Key Features
+## 🌟 Key Features
 
-### 1. 🏢 Business Insights & Segmentation
-- **K-Means Clustering**: Automatically segments customers into "High Performers", "Steady Average", and "Low Volume" groups based on purchasing behavior (RFM-style analysis).
-- **Visualizations**: Interactive bar charts and scatter plots to analyze sales distribution across segments.
+### 1. 📈 Strategic Sales Forecast
+- **Prophet Engine**: Leverages Facebook Prophet for robust time-series forecasting.
+- **Dynamic Filtering**: Forecast revenue for specific **Product Lines** (e.g., Motorcycles vs. Classic Cars).
+- **Interactive Horizon**: Visualize trends up to 1 year into the future.
 
-### 2. 📈 Advanced Forecasting Engine
-- **Facebook Prophet**: Powered by robust time-series modeling to handle seasonality and trends.
-- **Dynamic Filtering**: Forecast sales specifically for a Customer Segment or Product Family.
-- **Interactive Horizon**: Adjust the forecast period (30-365 days) with a simple slider.
+### 2. 👥 Customer Segmentation (RFM)
+- **RFM Analysis**: Automatically segments customers based on **Recency**, **Frequency**, and **Monetary** value.
+- **3D Visualization**: Interactive 3D scatter plot to explore customer clusters.
+- **High-Value Targets**: Instantly identifies the "Top 10" most valuable customers for VIP targeting.
 
-### 3. 🔍 Deep Dive Analytics
-- **Pareto Analysis**: Identifies the "vital few" product lines driving 80% of revenue (80/20 rule).
-- **Time-Series Heatmap**: Visualizes sales intensity by Month and Day of Week to spot temporal patterns.
+### 3. 📦 Product Intelligence
+- **Sunburst Chart**: Hierarchical view of sales performance from **Product Line** down to individual **Product Codes**.
+- **Pricing Strategy**: Comparative analysis of **Average MSRP** vs. **Actual Selling Price** to monitor discounting behavior.
+
+### 4. 🌍 Global Footprint
+- **Geospatial Analysis**: Interactive Choropleth map showing revenue distribution across countries.
+- **Territory Performance**: Breakdown of sales by global territories (EMEA, APAC, NA, etc.).
 
 ## 🛠️ Tech Stack
 - **App Framework**: [Streamlit](https://streamlit.io/)
-- **Machine Learning**: [Scikit-learn](https://scikit-learn.org/) (K-Means), [Prophet](https://facebook.github.io/prophet/) (Forecasting)
-- **Visualization**: [Plotly Express & Graph Objects](https://plotly.com/python/)
-- **Data Manipulation**: [Pandas](https://pandas.pydata.org/)
+- **Machine Learning**: [Prophet](https://facebook.github.io/prophet/) (Forecasting)
+- **Visualization**: [Plotly](https://plotly.com/python/) (3D Scatter, Sunburst, Maps)
+- **Data Processing**: [Pandas](https://pandas.pydata.org/)
 
 ## 📦 Installation & Usage
 
@@ -42,6 +47,6 @@ A production-grade analytics dashboard designed to transform retail transaction 
    ```
 
 ## 📂 Project Structure
-- `app.py`: Main application logic containing UI, data processing, and ML models.
+- `app.py`: The core application containing the Executive Dashboard logic.
 - `train.csv`: Historical retail transaction data.
-- `requirements.txt`: Python dependencies.
+- `requirements.txt`: List of Python dependencies.
