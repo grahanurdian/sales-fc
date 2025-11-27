@@ -15,7 +15,7 @@ st.set_page_config(page_title="Retail Sales Dashboard", layout="wide", initial_s
 def load_data():
     """Loads and cleans the training data."""
     try:
-        df = pd.read_csv('train.csv', encoding='ISO-8859-1') # Common encoding for this dataset type
+        df = pd.read_csv('train.csv', encoding='ISO-8859-1')
     except UnicodeDecodeError:
         df = pd.read_csv('train.csv')
     
@@ -33,7 +33,7 @@ def perform_segmentation(df):
     # Group by Customer
     customer_df = df.groupby('CUSTOMERNAME').agg({
         'SALES': 'sum',
-        'ORDERNUMBER': 'nunique' # Transaction count
+        'ORDERNUMBER': 'nunique'
     }).reset_index()
     
     # Simple clustering on Sales and Frequency
@@ -45,7 +45,7 @@ def perform_segmentation(df):
     # Label clusters based on average Sales
     cluster_avg = customer_df.groupby('Cluster')['SALES'].mean().sort_values()
     
-    # Map cluster IDs to labels: 0 -> Low, 1 -> Steady, 2 -> High (based on sort order)
+    # Map cluster IDs to labels: 0 -> Low, 1 -> Steady, 2 -> High
     label_map = {}
     labels = ["Low Volume", "Steady Average", "High Performers"]
     for i, cluster_id in enumerate(cluster_avg.index):
@@ -57,6 +57,99 @@ def perform_segmentation(df):
     merged_df = df.merge(customer_df[['CUSTOMERNAME', 'Segment']], on='CUSTOMERNAME', how='left')
     
     return merged_df, customer_df
+
+# --- Deep Dive Analytics Functions ---
+def perform_pareto(df):
+    """Calculates and plots Pareto analysis for Product Lines."""
+    # Group by Product Line
+    pareto_df = df.groupby('PRODUCTLINE')['SALES'].sum().reset_index()
+    pareto_df = pareto_df.sort_values('SALES', ascending=False)
+    
+    # Calculate cumulative percentage
+    pareto_df['cumulative_sales'] = pareto_df['SALES'].cumsum()
+    pareto_df['cumulative_percent'] = pareto_df['cumulative_sales'] / pareto_df['SALES'].sum() * 100
+    
+    # Generate Insight Text
+    # Find how many products make up 80% of revenue
+    top_products = pareto_df[pareto_df['cumulative_percent'] <= 80]
+    num_top = len(top_products)
+    if num_top == 0: # In case the first one is already > 80%
+        num_top = 1
+        
+    insight_text = f"Top {num_top} product families generate ~{int(pareto_df.iloc[num_top-1]['cumulative_percent'])}% of total revenue."
+    
+    # Plot Combo Chart
+    fig = go.Figure()
+    
+    # Bar chart for Sales
+    fig.add_trace(go.Bar(
+        x=pareto_df['PRODUCTLINE'],
+        y=pareto_df['SALES'],
+        name='Sales',
+        marker_color='rgb(55, 83, 109)'
+    ))
+    
+    # Line chart for Cumulative %
+    fig.add_trace(go.Scatter(
+        x=pareto_df['PRODUCTLINE'],
+        y=pareto_df['cumulative_percent'],
+        name='Cumulative %',
+        yaxis='y2',
+        mode='lines+markers',
+        marker_color='rgb(26, 118, 255)'
+    ))
+    
+    fig.update_layout(
+        title='Pareto Analysis: Revenue Concentration by Product Line',
+        xaxis_title='Product Line',
+        yaxis=dict(title='Total Sales ($)'),
+        yaxis2=dict(
+            title='Cumulative Percentage (%)',
+            overlaying='y',
+            side='right',
+            range=[0, 110]
+        ),
+        template='plotly_dark',
+        hovermode='x unified',
+        legend=dict(x=0.8, y=0.9)
+    )
+    
+    return fig, insight_text
+
+def plot_heatmap(df):
+    """Plots a heatmap of Average Sales by Month and Day of Week."""
+    # Extract time features
+    df['Month'] = df['ORDERDATE'].dt.month_name()
+    df['DayOfWeek'] = df['ORDERDATE'].dt.day_name()
+    
+    # Order for plotting
+    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 
+                   'July', 'August', 'September', 'October', 'November', 'December']
+    day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    
+    # Pivot table
+    heatmap_data = df.pivot_table(
+        index='Month', 
+        columns='DayOfWeek', 
+        values='SALES', 
+        aggfunc='mean'
+    )
+    
+    # Reindex to ensure correct order
+    heatmap_data = heatmap_data.reindex(index=month_order, columns=day_order)
+    
+    fig = px.imshow(
+        heatmap_data,
+        labels=dict(x="Day of Week", y="Month", color="Avg Sales ($)"),
+        x=day_order,
+        y=month_order,
+        color_continuous_scale='Viridis',
+        title="Weekly Sales Intensity (Average Sales Heatmap)",
+        template='plotly_dark'
+    )
+    fig.update_xaxes(side="top")
+    
+    return fig
 
 # --- Model Training ---
 @st.cache_resource
@@ -80,7 +173,7 @@ def main():
         df, customer_stats = perform_segmentation(raw_df)
 
     # Tabs
-    tab1, tab2 = st.tabs(["🏢 Business Insights", "📈 Forecast Engine"])
+    tab1, tab2, tab3 = st.tabs(["🏢 Business Insights", "📈 Forecast Engine", "🔍 Deep Dive Analytics"])
 
     # --- Tab 1: Business Insights ---
     with tab1:
@@ -90,7 +183,6 @@ def main():
         
         with col1:
             st.subheader("Sales by Segment")
-            # Aggregate sales by segment
             segment_sales = df.groupby('Segment')['SALES'].sum().reset_index()
             
             fig_bar = px.bar(
@@ -126,7 +218,6 @@ def main():
     with tab2:
         st.header("Sales Forecasting")
         
-        # Sidebar-like filters within the tab (or use st.sidebar)
         col_filter1, col_filter2 = st.columns(2)
         
         with col_filter1:
@@ -143,7 +234,6 @@ def main():
                 default=df['PRODUCTLINE'].unique()
             )
             
-        # Filter Logic
         filtered_df = df[
             (df['Segment'].isin(selected_segments)) & 
             (df['PRODUCTLINE'].isin(selected_products))
@@ -152,21 +242,16 @@ def main():
         if filtered_df.empty:
             st.warning("No data available for the selected filters.")
         else:
-            # Train Model
             with st.spinner('Training forecast model on filtered data...'):
                 m = train_prophet(filtered_df)
                 
-            # Forecast Horizon
             days_to_forecast = st.slider("Forecast Horizon (Days)", 30, 365, 90)
             
-            # Predict
             future = m.make_future_dataframe(periods=days_to_forecast)
             forecast = m.predict(future)
             
-            # Visualize
             st.subheader(f"Sales Forecast ({days_to_forecast} days)")
             
-            # Custom Plotly chart for better aesthetics
             fig_forecast = plot_plotly(m, forecast)
             fig_forecast.update_layout(
                 template='plotly_dark',
@@ -177,10 +262,32 @@ def main():
             )
             st.plotly_chart(fig_forecast, use_container_width=True)
             
-            # Components
             with st.expander("View Forecast Components"):
                 fig_comp = m.plot_components(forecast)
                 st.write(fig_comp)
+
+    # --- Tab 3: Deep Dive Analytics ---
+    with tab3:
+        st.header("Deep Dive Analytics")
+        
+        # 1. Pareto Analysis
+        st.subheader("Revenue Concentration (Pareto)")
+        fig_pareto, insight = perform_pareto(df)
+        st.info(f"💡 **Insight**: {insight}")
+        st.plotly_chart(fig_pareto, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # 2. Time-Series Heatmap
+        st.subheader("Weekly Sales Intensity")
+        st.markdown("Average sales performance by Month and Day of the Week.")
+        fig_heatmap = plot_heatmap(df)
+        st.plotly_chart(fig_heatmap, use_container_width=True)
+        
+        # 3. Promotion Logic (Skipped as per data inspection)
+        # if 'onpromotion' in df.columns or 'discount' in df.columns:
+        #     st.subheader("Promotion Impact")
+        #     ...
 
 if __name__ == "__main__":
     main()
